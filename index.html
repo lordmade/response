@@ -89,7 +89,13 @@
     };
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    try {
+      firebase.initializeApp(firebaseConfig);
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      alert('Failed to connect to database. Please try again later.');
+    }
     const database = firebase.database();
 
     // UI elements
@@ -113,26 +119,35 @@
       modal.classList.remove('hidden');
       detailsInput.value = '';
       shareLocation.checked = false;
+      console.log(`Opened modal for ${incident}`);
     }
 
     // Close modal
     function closeModal() {
       modal.classList.add('hidden');
       currentIncident = null;
+      console.log('Modal closed');
     }
 
     // Show confirmation
     function showConfirmation() {
       confirmation.classList.remove('hidden');
       setTimeout(() => confirmation.classList.add('hidden'), 3000);
+      console.log('Confirmation shown');
     }
 
     // Get location (returns promise)
     function getLocation() {
       return new Promise((resolve) => {
-        if (!shareLocation.checked) return resolve(null);
+        if (!shareLocation.checked) {
+          console.log('Location sharing not enabled');
+          return resolve(null);
+        }
         navigator.geolocation.getCurrentPosition(
-          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          pos => {
+            console.log('Location obtained:', pos.coords);
+            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
           err => {
             console.error('Location error:', err);
             alert('Unable to get location. Alert will be sent without location.');
@@ -165,11 +180,12 @@
 
       try {
         await database.ref('incidents').push(alert);
+        console.log('Alert sent to Firebase:', alert);
         closeModal();
         showConfirmation();
       } catch (error) {
         console.error('Error sending alert:', error);
-        alert('Failed to send alert. Please try again.');
+        alert('Failed to send alert. Please check your connection and try again.');
       }
     });
   </script>
