@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security Alert Client</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+  <style>
+    /* Button press animation */
+    @keyframes press {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    .btn-press:active {
+      animation: press 0.2s ease;
+    }
+    /* Modal backdrop */
+    .modal-backdrop {
+      backdrop-filter: blur(5px);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+  <div class="container mx-auto p-4 max-w-md">
+    <!-- Header -->
+    <header class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-red-600">Security Alert</h1>
+      <p class="text-sm text-gray-600">Tap a button to report an emergency</p>
+    </header>
+
+    <!-- Panic Buttons -->
+    <div class="grid grid-cols-1 gap-4">
+      <button id="break-in-btn" class="btn-press bg-red-600 text-white font-semibold py-4 rounded-lg shadow hover:bg-red-700">
+        Report Break-In
+      </button>
+      <button id="robbery-btn" class="btn-press bg-orange-500 text-white font-semibold py-4 rounded-lg shadow hover:bg-orange-600">
+        Report Robbery
+      </button>
+      <button id="medical-btn" class="btn-press bg-green-500 text-white font-semibold py-4 rounded-lg shadow hover:bg-green-600">
+        Report Medical Emergency
+      </button>
+    </div>
+
+    <!-- Modal for Details -->
+    <div id="alert-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop flex items-center justify-center">
+      <div class="bg-white p-6 rounded-lg max-w-sm w-full">
+        <h2 id="modal-title" class="text-lg font-semibold mb-4"></h2>
+        <form id="alert-form">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700">Details (Optional)</label>
+            <textarea id="details" class="mt-1 w-full p-2 border rounded-md" rows="3" placeholder="Describe the incident..."></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input type="checkbox" id="share-location" class="mr-2">
+              <span class="text-sm text-gray-700">Share my location</span>
+            </label>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" id="cancel-btn" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Confirmation Message -->
+    <div id="confirmation" class="hidden fixed bottom-4 left-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg">
+      <p>Alert sent! Help is on the way.</p>
+    </div>
+  </div>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOyZ3As4GTuNvjemvPF_SpsC6m6vqtNhc",
+      authDomain: "fire-b-a8878.firebaseapp.com",
+      databaseURL: "https://fire-b-a8878-default-rtdb.firebaseio.com",
+      projectId: "fire-b-a8878",
+      storageBucket: "fire-b-a8878.firebasestorage.app",
+      messagingSenderId: "658673187627",
+      appId: "1:658673187627:web:6e4c29af661785f0afa36e",
+      measurementId: "G-V4W97VMSKL"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // UI elements
+    const breakInBtn = document.getElementById('break-in-btn');
+    const robberyBtn = document.getElementById('robbery-btn');
+    const medicalBtn = document.getElementById('medical-btn');
+    const modal = document.getElementById('alert-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const alertForm = document.getElementById('alert-form');
+    const detailsInput = document.getElementById('details');
+    const shareLocation = document.getElementById('share-location');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const confirmation = document.getElementById('confirmation');
+
+    let currentIncident = null;
+
+    // Open modal with incident type
+    function openModal(incident, severity) {
+      currentIncident = { incident, severity };
+      modalTitle.textContent = `Report ${incident}`;
+      modal.classList.remove('hidden');
+      detailsInput.value = '';
+      shareLocation.checked = false;
+    }
+
+    // Close modal
+    function closeModal() {
+      modal.classList.add('hidden');
+      currentIncident = null;
+    }
+
+    // Show confirmation
+    function showConfirmation() {
+      confirmation.classList.remove('hidden');
+      setTimeout(() => confirmation.classList.add('hidden'), 3000);
+    }
+
+    // Get location (returns promise)
+    function getLocation() {
+      return new Promise((resolve) => {
+        if (!shareLocation.checked) return resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          err => {
+            console.error('Location error:', err);
+            alert('Unable to get location. Alert will be sent without location.');
+            resolve(null);
+          },
+          { timeout: 10000 }
+        );
+      });
+    }
+
+    // Button event listeners
+    breakInBtn.addEventListener('click', () => openModal('Break-In', 'Critical'));
+    robberyBtn.addEventListener('click', () => openModal('Robbery', 'High'));
+    medicalBtn.addEventListener('click', () => openModal('Medical Emergency', 'Critical'));
+    cancelBtn.addEventListener('click', closeModal);
+
+    // Form submission
+    alertForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const details = detailsInput.value.trim();
+      const location = await getLocation();
+      const alert = {
+        userId: `User${Math.floor(Math.random() * 100000)}`, // Replace with Firebase Auth in production
+        incident: currentIncident.incident,
+        severity: currentIncident.severity,
+        time: new Date().toISOString(),
+        location: location || { lat: null, lng: null },
+        details: details || `Reported ${currentIncident.incident}`
+      };
+
+      try {
+        await database.ref('incidents').push(alert);
+        closeModal();
+        showConfirmation();
+      } catch (error) {
+        console.error('Error sending alert:', error);
+        alert('Failed to send alert. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
