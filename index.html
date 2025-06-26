@@ -56,6 +56,7 @@
   <script type="module">
     // Import Firebase modules
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getDatabase, ref, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
     // Firebase configuration
@@ -72,8 +73,19 @@
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const database = getDatabase(app);
-    console.log('Firebase initialized at', new Date('2025-06-26T07:42:00Z').toISOString());
+    console.log('Firebase initialized at', new Date('2025-06-26T08:00:00Z').toISOString());
+
+    // Authentication check
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        console.log('User not authenticated at', new Date('2025-06-26T08:00:00Z').toISOString(), 'redirecting to sign-in');
+        window.location.href = 'sign-in.html';
+      } else {
+        console.log('User authenticated at', new Date('2025-06-26T08:00:00Z').toISOString(), ':', user.uid);
+      }
+    });
 
     // UI elements
     const welcomeScreen = document.getElementById('welcome-screen');
@@ -105,30 +117,30 @@
     // Event listeners
     sosBtn.addEventListener('click', () => {
       sosModal.classList.remove('hidden');
-      console.log('SOS triggered at', new Date('2025-06-26T07:42:00Z').toISOString());
+      console.log('SOS triggered at', new Date('2025-06-26T08:00:00Z').toISOString());
     });
 
     cancelSosBtn.addEventListener('click', () => {
       sosModal.classList.add('hidden');
-      console.log('SOS canceled at', new Date('2025-06-26T07:42:00Z').toISOString());
+      console.log('SOS canceled at', new Date('2025-06-26T08:00:00Z').toISOString());
     });
 
     // Get current location
     async function getCurrentLocation() {
       return new Promise((resolve) => {
         if (!navigator.geolocation) {
-          console.error('Geolocation not supported at', new Date('2025-06-26T07:42:00Z').toISOString());
+          console.error('Geolocation not supported at', new Date('2025-06-26T08:00:00Z').toISOString());
           alert('Geolocation not supported. Sending without location.');
           return resolve(null);
         }
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            console.log('Location obtained:', { latitude, longitude }, 'at', new Date('2025-06-26T07:42:00Z').toISOString());
+            console.log('Location obtained:', { latitude, longitude }, 'at', new Date('2025-06-26T08:00:00Z').toISOString());
             resolve({ lat: latitude, lng: longitude });
           },
           (err) => {
-            console.error('Location error:', err, 'at', new Date('2025-06-26T07:42:00Z').toISOString());
+            console.error('Location error:', err, 'at', new Date('2025-06-26T08:00:00Z').toISOString());
             alert('Unable to get location. Sending without it.');
             resolve(null);
           },
@@ -157,7 +169,7 @@
     cancelConfirmBtn.addEventListener('click', () => {
       confirmModal.classList.add('hidden');
       sosModal.classList.remove('hidden');
-      console.log('SOS confirmation canceled at', new Date('2025-06-26T07:42:00Z').toISOString());
+      console.log('SOS confirmation canceled at', new Date('2025-06-26T08:00:00Z').toISOString());
     });
 
     confirmSendBtn.addEventListener('click', async () => {
@@ -166,8 +178,8 @@
       const location = await getCurrentLocation(); // Re-fetch to ensure latest location
       const battery = batteryLevel.textContent === 'N/A' ? null : parseInt(batteryLevel.textContent);
       const alert = {
-        userId: `User${Math.floor(Math.random() * 100000)}`,
-        timestamp: new Date('2025-06-26T07:42:00Z').toISOString(),
+        userId: auth.currentUser ? auth.currentUser.uid : `User${Math.floor(Math.random() * 100000)}`,
+        timestamp: new Date('2025-06-26T08:00:00Z').toISOString(),
         location: location || { lat: null, lng: null },
         details: details || 'SOS triggered',
         batteryLevel: battery,
@@ -175,11 +187,11 @@
       };
       try {
         const sosRef = ref(database, 'sos-alerts');
-        await push(sosRef, alert);
-        console.log('SOS sent to admin at', new Date('2025-06-26T07:42:00Z').toISOString(), 'with data:', alert);
+        const newAlertRef = await push(sosRef, alert);
+        console.log('SOS sent to Realtime Database at', new Date('2025-06-26T08:00:00Z').toISOString(), 'with key:', newAlertRef.key, 'data:', alert);
         showConfirmation();
       } catch (error) {
-        console.error('SOS send error:', error, 'at', new Date('2025-06-26T07:42:00Z').toISOString());
+        console.error('SOS send error to Realtime Database:', error, 'at', new Date('2025-06-26T08:00:00Z').toISOString());
         alert('Failed to send SOS. Try again.');
       }
     });
@@ -188,7 +200,7 @@
     function showConfirmation() {
       confirmation.classList.remove('hidden');
       setTimeout(() => confirmation.classList.add('hidden'), 3000);
-      console.log('Confirmation shown at', new Date('2025-06-26T07:42:00Z').toISOString());
+      console.log('Confirmation shown at', new Date('2025-06-26T08:00:00Z').toISOString());
     }
   </script>
 </body>
