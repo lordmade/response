@@ -5,13 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOS Emergency App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <style>
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     .sos-pulse { animation: pulse 2s infinite; }
     .modal-backdrop { backdrop-filter: blur(5px); }
-    #map { border-radius: 0.5rem; height: 200px; }
     #confirm-modal { display: none; }
   </style>
 </head>
@@ -55,7 +52,6 @@
     <div id="confirmation" class="hidden fixed bottom-4 left-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg text-center">
       <p>SOS sent to admin! Help is on the way.</p>
     </div>
-    <div id="map" class="hidden"></div>
   </div>
   <script type="module">
     // Import Firebase modules
@@ -77,16 +73,7 @@
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-    console.log('Firebase initialized at', new Date('2025-06-26T07:36:00Z').toISOString());
-
-    // Mapbox initialization
-    mapboxgl.accessToken = 'pk.eyJ1Ijoia2F0bGVnb3BoYXNoYSIsImEiOiJjbTlpOTdzbmYwMGNsMmpzYWJtZzN4d3pqIn0.Zt-aSMEoahrV3zkiVVHbOw';
-    const map = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [-26.2041, 28.0473], // Default to Johannesburg
-      zoom: 12
-    });
+    console.log('Firebase initialized at', new Date('2025-06-26T07:42:00Z').toISOString());
 
     // UI elements
     const welcomeScreen = document.getElementById('welcome-screen');
@@ -118,30 +105,30 @@
     // Event listeners
     sosBtn.addEventListener('click', () => {
       sosModal.classList.remove('hidden');
-      console.log('SOS triggered at', new Date('2025-06-26T07:36:00Z').toISOString());
+      console.log('SOS triggered at', new Date('2025-06-26T07:42:00Z').toISOString());
     });
 
     cancelSosBtn.addEventListener('click', () => {
       sosModal.classList.add('hidden');
-      console.log('SOS canceled at', new Date('2025-06-26T07:36:00Z').toISOString());
+      console.log('SOS canceled at', new Date('2025-06-26T07:42:00Z').toISOString());
     });
 
-    // Get current location with Mapbox
+    // Get current location
     async function getCurrentLocation() {
       return new Promise((resolve) => {
         if (!navigator.geolocation) {
-          console.error('Geolocation not supported at', new Date('2025-06-26T07:36:00Z').toISOString());
+          console.error('Geolocation not supported at', new Date('2025-06-26T07:42:00Z').toISOString());
           alert('Geolocation not supported. Sending without location.');
           return resolve(null);
         }
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            console.log('Location obtained:', { latitude, longitude }, 'at', new Date('2025-06-26T07:36:00Z').toISOString());
+            console.log('Location obtained:', { latitude, longitude }, 'at', new Date('2025-06-26T07:42:00Z').toISOString());
             resolve({ lat: latitude, lng: longitude });
           },
           (err) => {
-            console.error('Location error:', err, 'at', new Date('2025-06-26T07:36:00Z').toISOString());
+            console.error('Location error:', err, 'at', new Date('2025-06-26T07:42:00Z').toISOString());
             alert('Unable to get location. Sending without it.');
             resolve(null);
           },
@@ -155,11 +142,6 @@
       e.preventDefault();
       const details = sosDetails.value.trim();
       const location = await getCurrentLocation();
-      if (location) {
-        document.getElementById('map').classList.remove('hidden');
-        new mapboxgl.Marker().setLngLat([location.lng, location.lat]).addTo(map);
-        map.flyTo({ center: [location.lng, location.lat], zoom: 14 });
-      }
       const battery = batteryLevel.textContent === 'N/A' ? null : parseInt(batteryLevel.textContent);
       const alertSummary = `
         <p>Details: ${details || 'No details provided'}</p>
@@ -175,7 +157,7 @@
     cancelConfirmBtn.addEventListener('click', () => {
       confirmModal.classList.add('hidden');
       sosModal.classList.remove('hidden');
-      console.log('SOS confirmation canceled at', new Date('2025-06-26T07:36:00Z').toISOString());
+      console.log('SOS confirmation canceled at', new Date('2025-06-26T07:42:00Z').toISOString());
     });
 
     confirmSendBtn.addEventListener('click', async () => {
@@ -185,7 +167,7 @@
       const battery = batteryLevel.textContent === 'N/A' ? null : parseInt(batteryLevel.textContent);
       const alert = {
         userId: `User${Math.floor(Math.random() * 100000)}`,
-        timestamp: new Date('2025-06-26T07:36:00Z').toISOString(),
+        timestamp: new Date('2025-06-26T07:42:00Z').toISOString(),
         location: location || { lat: null, lng: null },
         details: details || 'SOS triggered',
         batteryLevel: battery,
@@ -194,10 +176,10 @@
       try {
         const sosRef = ref(database, 'sos-alerts');
         await push(sosRef, alert);
-        console.log('SOS sent to admin at', new Date('2025-06-26T07:36:00Z').toISOString(), 'with data:', alert);
+        console.log('SOS sent to admin at', new Date('2025-06-26T07:42:00Z').toISOString(), 'with data:', alert);
         showConfirmation();
       } catch (error) {
-        console.error('SOS send error:', error, 'at', new Date('2025-06-26T07:36:00Z').toISOString());
+        console.error('SOS send error:', error, 'at', new Date('2025-06-26T07:42:00Z').toISOString());
         alert('Failed to send SOS. Try again.');
       }
     });
@@ -205,12 +187,8 @@
     // Show confirmation
     function showConfirmation() {
       confirmation.classList.remove('hidden');
-      setTimeout(() => {
-        confirmation.classList.add('hidden');
-        document.getElementById('map').classList.add('hidden');
-        sosModal.classList.add('hidden');
-      }, 3000);
-      console.log('Confirmation shown at', new Date('2025-06-26T07:36:00Z').toISOString());
+      setTimeout(() => confirmation.classList.add('hidden'), 3000);
+      console.log('Confirmation shown at', new Date('2025-06-26T07:42:00Z').toISOString());
     }
   </script>
 </body>
