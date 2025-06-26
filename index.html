@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOS Emergency App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <style>
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     .sos-pulse { animation: pulse 2s infinite; }
     .modal-backdrop { backdrop-filter: blur(5px); }
+    #map { border-radius: 0.5rem; height: 200px; }
+    #confirm-modal { display: none; }
   </style>
 </head>
 <body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
@@ -29,10 +33,7 @@
             <textarea id="sos-details" class="mt-1 w-full p-2 border rounded-md" rows="3" placeholder="Describe your emergency..."></textarea>
           </div>
           <div class="mb-4">
-            <label class="flex items-center">
-              <input type="checkbox" id="share-location" class="mr-2">
-              <span class="text-sm text-gray-700">Share my location</span>
-            </label>
+            <p class="text-sm text-gray-600">Battery: <span id="battery-level">Checking...</span></p>
           </div>
           <div class="flex justify-end gap-2">
             <button type="button" id="cancel-sos-btn" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Cancel</button>
@@ -41,9 +42,20 @@
         </form>
       </div>
     </div>
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop flex items-center justify-center">
+      <div class="bg-white p-6 rounded-lg max-w-sm w-full">
+        <h2 class="text-lg font-semibold mb-4">Confirm SOS Alert</h2>
+        <div id="confirm-details" class="mb-4 text-sm text-gray-700"></div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancel-confirm-btn" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Cancel</button>
+          <button type="button" id="confirm-send-btn" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Send SOS</button>
+        </div>
+      </div>
+    </div>
     <div id="confirmation" class="hidden fixed bottom-4 left-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg text-center">
       <p>SOS sent to admin! Help is on the way.</p>
     </div>
+    <div id="map" class="hidden"></div>
   </div>
   <script type="module">
     // Import Firebase modules
@@ -65,7 +77,16 @@
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-    console.log('Firebase initialized at', new Date().toISOString());
+    console.log('Firebase initialized at', new Date('2025-06-26T07:36:00Z').toISOString());
+
+    // Mapbox initialization
+    mapboxgl.accessToken = 'pk.eyJ1Ijoia2F0bGVnb3BoYXNoYSIsImEiOiJjbTlpOTdzbmYwMGNsMmpzYWJtZzN4d3pqIn0.Zt-aSMEoahrV3zkiVVHbOw';
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-26.2041, 28.0473], // Default to Johannesburg
+      zoom: 12
+    });
 
     // UI elements
     const welcomeScreen = document.getElementById('welcome-screen');
@@ -73,36 +94,55 @@
     const sosModal = document.getElementById('sos-modal');
     const sosForm = document.getElementById('sos-form');
     const sosDetails = document.getElementById('sos-details');
-    const shareLocation = document.getElementById('share-location');
+    const batteryLevel = document.getElementById('battery-level');
     const cancelSosBtn = document.getElementById('cancel-sos-btn');
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmDetails = document.getElementById('confirm-details');
+    const cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
+    const confirmSendBtn = document.getElementById('confirm-send-btn');
     const confirmation = document.getElementById('confirmation');
+
+    // Get battery level
+    if ('getBattery' in navigator) {
+      navigator.getBattery().then(battery => {
+        const level = Math.round(battery.level * 100);
+        batteryLevel.textContent = `${level}%`;
+        battery.addEventListener('levelchange', () => {
+          batteryLevel.textContent = `${Math.round(battery.level * 100)}%`;
+        });
+      });
+    } else {
+      batteryLevel.textContent = 'N/A';
+    }
 
     // Event listeners
     sosBtn.addEventListener('click', () => {
       sosModal.classList.remove('hidden');
-      console.log('SOS triggered at', new Date().toISOString());
+      console.log('SOS triggered at', new Date('2025-06-26T07:36:00Z').toISOString());
     });
 
     cancelSosBtn.addEventListener('click', () => {
       sosModal.classList.add('hidden');
-      console.log('SOS canceled at', new Date().toISOString());
+      console.log('SOS canceled at', new Date('2025-06-26T07:36:00Z').toISOString());
     });
 
-    // Get location
-    function getLocation() {
+    // Get current location with Mapbox
+    async function getCurrentLocation() {
       return new Promise((resolve) => {
-        if (!shareLocation.checked) {
-          console.log('Location sharing disabled at', new Date().toISOString());
+        if (!navigator.geolocation) {
+          console.error('Geolocation not supported at', new Date('2025-06-26T07:36:00Z').toISOString());
+          alert('Geolocation not supported. Sending without location.');
           return resolve(null);
         }
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            console.log('Location obtained:', pos.coords, 'at', new Date().toISOString());
-            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            const { latitude, longitude } = pos.coords;
+            console.log('Location obtained:', { latitude, longitude }, 'at', new Date('2025-06-26T07:36:00Z').toISOString());
+            resolve({ lat: latitude, lng: longitude });
           },
           (err) => {
-            console.error('Location error:', err, 'at', new Date().toISOString());
-            alert('Unable to get location. Alert sent without it.');
+            console.error('Location error:', err, 'at', new Date('2025-06-26T07:36:00Z').toISOString());
+            alert('Unable to get location. Sending without it.');
             resolve(null);
           },
           { timeout: 10000 }
@@ -110,26 +150,54 @@
       });
     }
 
-    // Send SOS alert
+    // Show confirmation alert
     sosForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const details = sosDetails.value.trim();
-      const location = await getLocation();
+      const location = await getCurrentLocation();
+      if (location) {
+        document.getElementById('map').classList.remove('hidden');
+        new mapboxgl.Marker().setLngLat([location.lng, location.lat]).addTo(map);
+        map.flyTo({ center: [location.lng, location.lat], zoom: 14 });
+      }
+      const battery = batteryLevel.textContent === 'N/A' ? null : parseInt(batteryLevel.textContent);
+      const alertSummary = `
+        <p>Details: ${details || 'No details provided'}</p>
+        <p>Location: Lat ${location?.lat ?? 'N/A'}, Lng ${location?.lng ?? 'N/A'}</p>
+        <p>Battery: ${battery ?? 'N/A'}%</p>
+      `;
+      confirmDetails.innerHTML = alertSummary;
+      sosModal.classList.add('hidden');
+      confirmModal.classList.remove('hidden');
+    });
+
+    // Handle confirmation
+    cancelConfirmBtn.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+      sosModal.classList.remove('hidden');
+      console.log('SOS confirmation canceled at', new Date('2025-06-26T07:36:00Z').toISOString());
+    });
+
+    confirmSendBtn.addEventListener('click', async () => {
+      confirmModal.classList.add('hidden');
+      const details = sosDetails.value.trim();
+      const location = await getCurrentLocation(); // Re-fetch to ensure latest location
+      const battery = batteryLevel.textContent === 'N/A' ? null : parseInt(batteryLevel.textContent);
       const alert = {
         userId: `User${Math.floor(Math.random() * 100000)}`,
-        timestamp: new Date('2025-06-26T05:40:00Z').toISOString(), // 07:40 AM SAST
+        timestamp: new Date('2025-06-26T07:36:00Z').toISOString(),
         location: location || { lat: null, lng: null },
         details: details || 'SOS triggered',
+        batteryLevel: battery,
         status: 'pending'
       };
       try {
         const sosRef = ref(database, 'sos-alerts');
         await push(sosRef, alert);
-        console.log('SOS sent to admin at', new Date().toISOString(), 'with data:', alert);
-        sosModal.classList.add('hidden');
+        console.log('SOS sent to admin at', new Date('2025-06-26T07:36:00Z').toISOString(), 'with data:', alert);
         showConfirmation();
       } catch (error) {
-        console.error('SOS send error:', error, 'at', new Date().toISOString());
+        console.error('SOS send error:', error, 'at', new Date('2025-06-26T07:36:00Z').toISOString());
         alert('Failed to send SOS. Try again.');
       }
     });
@@ -137,8 +205,12 @@
     // Show confirmation
     function showConfirmation() {
       confirmation.classList.remove('hidden');
-      setTimeout(() => confirmation.classList.add('hidden'), 3000);
-      console.log('Confirmation shown at', new Date().toISOString());
+      setTimeout(() => {
+        confirmation.classList.add('hidden');
+        document.getElementById('map').classList.add('hidden');
+        sosModal.classList.add('hidden');
+      }, 3000);
+      console.log('Confirmation shown at', new Date('2025-06-26T07:36:00Z').toISOString());
     }
   </script>
 </body>
