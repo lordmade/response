@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOS Emergency App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
   <style>
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     .sos-pulse { animation: pulse 2s infinite; }
@@ -47,7 +45,12 @@
       <p>SOS sent to admin! Help is on the way.</p>
     </div>
   </div>
-  <script>
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getDatabase, ref, push } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBOyZ3As4GTuNvjemvPF_SpsC6m6vqtNhc",
       authDomain: "fire-b-a8878.firebaseapp.com",
@@ -58,9 +61,13 @@
       appId: "1:658673187627:web:6e4c29af661785f0afa36e",
       measurementId: "G-V4W97VMSKL"
     };
-    try { firebase.initializeApp(firebaseConfig); console.log('Firebase initialized'); } catch (error) { console.error('Firebase error:', error); alert('Connection failed.'); }
-    const database = firebase.database();
 
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    console.log('Firebase initialized at', new Date().toISOString());
+
+    // UI elements
     const welcomeScreen = document.getElementById('welcome-screen');
     const sosBtn = document.getElementById('sos-btn');
     const sosModal = document.getElementById('sos-modal');
@@ -70,45 +77,68 @@
     const cancelSosBtn = document.getElementById('cancel-sos-btn');
     const confirmation = document.getElementById('confirmation');
 
-    sosBtn.addEventListener('click', () => { sosModal.classList.remove('hidden'); console.log('SOS triggered'); });
-    cancelSosBtn.addEventListener('click', () => { sosModal.classList.add('hidden'); console.log('SOS canceled'); });
+    // Event listeners
+    sosBtn.addEventListener('click', () => {
+      sosModal.classList.remove('hidden');
+      console.log('SOS triggered at', new Date().toISOString());
+    });
 
+    cancelSosBtn.addEventListener('click', () => {
+      sosModal.classList.add('hidden');
+      console.log('SOS canceled at', new Date().toISOString());
+    });
+
+    // Get location
     function getLocation() {
       return new Promise((resolve) => {
-        if (!shareLocation.checked) return resolve(null);
+        if (!shareLocation.checked) {
+          console.log('Location sharing disabled at', new Date().toISOString());
+          return resolve(null);
+        }
         navigator.geolocation.getCurrentPosition(
-          pos => { console.log('Location:', pos.coords); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
-          err => { console.error('Location error:', err); alert('Location failed, sending without it.'); resolve(null); },
+          (pos) => {
+            console.log('Location obtained:', pos.coords, 'at', new Date().toISOString());
+            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
+          (err) => {
+            console.error('Location error:', err, 'at', new Date().toISOString());
+            alert('Unable to get location. Alert sent without it.');
+            resolve(null);
+          },
           { timeout: 10000 }
         );
       });
     }
 
+    // Send SOS alert
     sosForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const details = sosDetails.value.trim();
       const location = await getLocation();
       const alert = {
         userId: `User${Math.floor(Math.random() * 100000)}`,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date('2025-06-26T05:40:00Z').toISOString(), // 07:40 AM SAST
         location: location || { lat: null, lng: null },
         details: details || 'SOS triggered',
         status: 'pending'
       };
       try {
-        await database.ref('sos-alerts').push(alert);
-        console.log('SOS sent:', alert);
+        const sosRef = ref(database, 'sos-alerts');
+        await push(sosRef, alert);
+        console.log('SOS sent to admin at', new Date().toISOString(), 'with data:', alert);
         sosModal.classList.add('hidden');
         showConfirmation();
       } catch (error) {
-        console.error('SOS send error:', error);
+        console.error('SOS send error:', error, 'at', new Date().toISOString());
         alert('Failed to send SOS. Try again.');
       }
     });
 
+    // Show confirmation
     function showConfirmation() {
       confirmation.classList.remove('hidden');
       setTimeout(() => confirmation.classList.add('hidden'), 3000);
+      console.log('Confirmation shown at', new Date().toISOString());
     }
   </script>
 </body>
