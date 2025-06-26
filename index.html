@@ -4,54 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOS Emergency App</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
   <style>
-    /* SOS button animation */
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-    .sos-pulse {
-      animation: pulse 2s infinite;
-    }
-    /* Modal backdrop */
-    .modal-backdrop {
-      backdrop-filter: blur(5px);
-    }
-    /* Map styling */
-    #map { border-radius: 0.5rem; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .sos-pulse { animation: pulse 2s infinite; }
+    .modal-backdrop { backdrop-filter: blur(5px); }
   </style>
 </head>
 <body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
   <div class="container mx-auto p-4 max-w-md">
-    <!-- Welcome Screen -->
     <div id="welcome-screen" class="text-center">
-      <h1 class="text-2xl font-bold text-gray-800 mb-4">Hi George!</h1>
-      <p class="text-sm text-gray-600 mb-6">Your SOS will be sent to 6 people</p>
+      <h1 class="text-2xl font-bold text-gray-800 mb-4">Hi User!</h1>
+      <p class="text-sm text-gray-600 mb-6">Tap SOS to alert the admin</p>
       <button id="sos-btn" class="sos-pulse bg-red-600 text-white font-semibold py-6 px-8 rounded-full shadow-lg hover:bg-red-700">
         SOS
       </button>
-      <div class="mt-6 grid grid-cols-3 gap-2">
-        <div class="text-center">
-          <div class="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-1"></div>
-          <p class="text-xs text-gray-700">Family</p>
-        </div>
-        <div class="text-center">
-          <div class="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-1"></div>
-          <p class="text-xs text-gray-700">University</p>
-        </div>
-        <div class="text-center">
-          <div class="w-12 h-12 bg-gray-200 rounded-full mx-auto mb-1"></div>
-          <p class="text-xs text-gray-700">Work</p>
-        </div>
-      </div>
     </div>
-
-    <!-- Modal for SOS Details -->
     <div id="sos-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal-backdrop flex items-center justify-center">
       <div class="bg-white p-6 rounded-lg max-w-sm w-full">
         <h2 class="text-lg font-semibold mb-4">Send SOS Alert</h2>
@@ -73,68 +43,11 @@
         </form>
       </div>
     </div>
-
-    <!-- Location Screen -->
-    <div id="location-screen" class="hidden">
-      <h2 class="text-lg font-semibold mb-4 text-center">Location</h2>
-      <div id="map" class="h-64 mb-4"></div>
-      <div class="text-center">
-        <p class="text-sm text-gray-600">People nearby will be notified</p>
-        <div class="mt-2 flex justify-center items-center">
-          <div class="w-8 h-8 bg-gray-200 rounded-full mr-2"></div>
-          <p class="text-sm text-gray-700">Karen Castillo</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Contacts Screen -->
-    <div id="contacts-screen" class="hidden">
-      <div class="flex mb-4">
-        <button id="my-contacts-tab" class="flex-1 py-2 border-b-2 border-blue-600 text-blue-600">My Contacts</button>
-        <button id="my-communities-tab" class="flex-1 py-2 border-b-2 border-transparent text-gray-600">My Communities</button>
-      </div>
-      <div id="contacts-list" class="space-y-2">
-        <div class="flex items-center">
-          <div class="w-10 h-10 bg-gray-200 rounded-full mr-2"></div>
-          <div>
-            <p class="text-sm font-medium">Arthur Lucas</p>
-            <p class="text-xs text-gray-500">+27 123 456 789</p>
-          </div>
-        </div>
-        <div class="flex items-center">
-          <div class="w-10 h-10 bg-gray-200 rounded-full mr-2"></div>
-          <div>
-            <p class="text-sm font-medium">Louis Mason</p>
-            <p class="text-xs text-gray-500">+27 987 654 321</p>
-          </div>
-        </div>
-      </div>
-      <div id="communities-list" class="hidden space-y-2">
-        <div class="flex items-center">
-          <div class="w-10 h-10 bg-gray-200 rounded-full mr-2"></div>
-          <div>
-            <p class="text-sm font-medium">Family</p>
-            <p class="text-xs text-gray-500">4 members</p>
-          </div>
-        </div>
-        <div class="flex items-center">
-          <div class="w-10 h-10 bg-gray-200 rounded-full mr-2"></div>
-          <div>
-            <p class="text-sm font-medium">Office Staff</p>
-            <p class="text-xs text-gray-500">21 members</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Confirmation Message -->
     <div id="confirmation" class="hidden fixed bottom-4 left-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg text-center">
-      <p>SOS sent! Help is on the way.</p>
+      <p>SOS sent to admin! Help is on the way.</p>
     </div>
   </div>
-
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBOyZ3As4GTuNvjemvPF_SpsC6m6vqtNhc",
       authDomain: "fire-b-a8878.firebaseapp.com",
@@ -145,18 +58,9 @@
       appId: "1:658673187627:web:6e4c29af661785f0afa36e",
       measurementId: "G-V4W97VMSKL"
     };
-
-    // Initialize Firebase
-    try {
-      firebase.initializeApp(firebaseConfig);
-      console.log('Firebase initialized successfully');
-    } catch (error) {
-      console.error('Firebase initialization error:', error);
-      alert('Failed to connect to database. Please try again later.');
-    }
+    try { firebase.initializeApp(firebaseConfig); console.log('Firebase initialized'); } catch (error) { console.error('Firebase error:', error); alert('Connection failed.'); }
     const database = firebase.database();
 
-    // UI elements
     const welcomeScreen = document.getElementById('welcome-screen');
     const sosBtn = document.getElementById('sos-btn');
     const sosModal = document.getElementById('sos-modal');
@@ -164,113 +68,48 @@
     const sosDetails = document.getElementById('sos-details');
     const shareLocation = document.getElementById('share-location');
     const cancelSosBtn = document.getElementById('cancel-sos-btn');
-    const locationScreen = document.getElementById('location-screen');
-    const contactsScreen = document.getElementById('contacts-screen');
-    const myContactsTab = document.getElementById('my-contacts-tab');
-    const myCommunitiesTab = document.getElementById('my-communities-tab');
-    const contactsList = document.getElementById('contacts-list');
-    const communitiesList = document.getElementById('communities-list');
     const confirmation = document.getElementById('confirmation');
-    const map = L.map('map').setView([-26.2041, 28.0473], 12); // Centered on Johannesburg
 
-    // Initialize map
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    sosBtn.addEventListener('click', () => { sosModal.classList.remove('hidden'); console.log('SOS triggered'); });
+    cancelSosBtn.addEventListener('click', () => { sosModal.classList.add('hidden'); console.log('SOS canceled'); });
 
-    // Show modal
-    sosBtn.addEventListener('click', () => {
-      sosModal.classList.remove('hidden');
-      console.log('SOS button clicked');
-    });
-
-    // Cancel modal
-    cancelSosBtn.addEventListener('click', () => {
-      sosModal.classList.add('hidden');
-      console.log('SOS modal canceled');
-    });
-
-    // Get location
     function getLocation() {
       return new Promise((resolve) => {
-        if (!shareLocation.checked) {
-          console.log('Location sharing not enabled');
-          return resolve(null);
-        }
+        if (!shareLocation.checked) return resolve(null);
         navigator.geolocation.getCurrentPosition(
-          pos => {
-            console.log('Location obtained:', pos.coords);
-            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          },
-          err => {
-            console.error('Location error:', err);
-            alert('Unable to get location. Alert will be sent without location.');
-            resolve(null);
-          },
+          pos => { console.log('Location:', pos.coords); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+          err => { console.error('Location error:', err); alert('Location failed, sending without it.'); resolve(null); },
           { timeout: 10000 }
         );
       });
     }
 
-    // Send SOS alert
     sosForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const details = sosDetails.value.trim();
       const location = await getLocation();
       const alert = {
-        userId: `User${Math.floor(Math.random() * 100000)}`, // Replace with Firebase Auth in production
+        userId: `User${Math.floor(Math.random() * 100000)}`,
         timestamp: new Date().toISOString(),
         location: location || { lat: null, lng: null },
         details: details || 'SOS triggered',
-        contactsNotified: ['Family', 'University', 'Work'] // Mock contacts; replace with real list
+        status: 'pending'
       };
-
       try {
         await database.ref('sos-alerts').push(alert);
-        console.log('SOS alert sent to Firebase:', alert);
+        console.log('SOS sent:', alert);
         sosModal.classList.add('hidden');
-        locationScreen.classList.remove('hidden'); // Show location screen
-        if (location) {
-          L.marker([location.lat, location.lng]).addTo(map).bindPopup('Your location');
-          map.setView([location.lat, location.lng], 13);
-        }
         showConfirmation();
       } catch (error) {
-        console.error('Error sending SOS alert:', error);
-        alert('Failed to send SOS. Please try again.');
+        console.error('SOS send error:', error);
+        alert('Failed to send SOS. Try again.');
       }
     });
 
-    // Show confirmation
     function showConfirmation() {
       confirmation.classList.remove('hidden');
-      setTimeout(() => {
-        confirmation.classList.add('hidden');
-        locationScreen.classList.add('hidden');
-        welcomeScreen.classList.remove('hidden'); // Return to welcome screen
-      }, 3000);
+      setTimeout(() => confirmation.classList.add('hidden'), 3000);
     }
-
-    // Tab navigation for contacts
-    myContactsTab.addEventListener('click', () => {
-      myContactsTab.classList.add('border-blue-600', 'text-blue-600');
-      myCommunitiesTab.classList.remove('border-blue-600', 'text-blue-600');
-      myCommunitiesTab.classList.add('border-transparent', 'text-gray-600');
-      contactsList.classList.remove('hidden');
-      communitiesList.classList.add('hidden');
-      welcomeScreen.classList.add('hidden');
-      contactsScreen.classList.remove('hidden');
-    });
-
-    myCommunitiesTab.addEventListener('click', () => {
-      myCommunitiesTab.classList.add('border-blue-600', 'text-blue-600');
-      myContactsTab.classList.remove('border-blue-600', 'text-blue-600');
-      myContactsTab.classList.add('border-transparent', 'text-gray-600');
-      communitiesList.classList.remove('hidden');
-      contactsList.classList.add('hidden');
-      welcomeScreen.classList.add('hidden');
-      contactsScreen.classList.remove('hidden');
-    });
   </script>
 </body>
 </html>
